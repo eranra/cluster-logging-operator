@@ -3,12 +3,12 @@ package functional
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
 	"gopkg.in/yaml.v2"
 
 	"github.com/ViaQ/logerr/log"
+	shellquote "github.com/kballard/go-shellquote"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
@@ -32,7 +32,7 @@ type FluentdFunctionalFramework struct {
 	image     string
 	labels    map[string]string
 	Forwarder *logging.ClusterLogForwarder
-	test      *client.Test
+	Test      *client.Test
 	pod       *corev1.Pod
 }
 
@@ -53,24 +53,27 @@ func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
 			"testtype": "functional",
 			"testname": testName,
 		},
-		test:      t,
+		Test:      t,
 		Forwarder: runtime.NewClusterLogForwarder(),
 	}
 	return framework
 }
 
 func (f *FluentdFunctionalFramework) Cleanup() {
-	f.test.Close()
+	f.Test.Close()
 }
 
 func (f *FluentdFunctionalFramework) RunCommand(cmdString string) (string, error) {
-	cmd := strings.Split(cmdString, " ")
+	//cmd := strings.Split(cmdString, " ")
+	cmd, _ := shellquote.Split(cmdString)
+	//r := regexp.MustCompile(`[^\s"']+|"([^"]*)"|'([^']*)`)
+	//cmd := r.FindAllString(cmdString, -1)
 	log.V(2).Info("Running", "cmd", cmdString)
 	out, err := runtime.Exec(f.pod, cmd[0], cmd[1:]...).CombinedOutput()
 	return string(out), err
 }
 
-//Deploy the objects needed to functional test
+//Deploy the objects needed to functional Test
 func (f *FluentdFunctionalFramework) Deploy() (err error) {
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	yaml, _ := yaml.Marshal(f.Forwarder)
@@ -78,42 +81,42 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")
-	if err = certificates.GenerateCertificates(f.test.NS.Name,
+	if err = certificates.GenerateCertificates(f.Test.NS.Name,
 		utils.GetScriptsDir(), "elasticsearch",
 		utils.DefaultWorkingDir); err != nil {
 		return err
 	}
 	log.V(2).Info("Creating config configmap")
-	configmap := runtime.NewConfigMap(f.test.NS.Name, f.Name, map[string]string{})
+	configmap := runtime.NewConfigMap(f.Test.NS.Name, f.Name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
 		Add("fluent.conf", f.Conf).
 		Add("run.sh", string(utils.GetFileContents(utils.GetShareDir()+"/fluentd/run.sh")))
-	if err = f.test.Client.Create(configmap); err != nil {
+	if err = f.Test.Client.Create(configmap); err != nil {
 		return err
 	}
 
 	log.V(2).Info("Creating certs configmap")
 	certsName := "certs-" + f.Name
-	certs := runtime.NewConfigMap(f.test.NS.Name, certsName, map[string]string{})
+	certs := runtime.NewConfigMap(f.Test.NS.Name, certsName, map[string]string{})
 	runtime.NewConfigMapBuilder(certs).
 		Add("tls.key", string(utils.GetWorkingDirFileContents("system.logging.fluentd.key"))).
 		Add("tls.crt", string(utils.GetWorkingDirFileContents("system.logging.fluentd.crt")))
-	if err = f.test.Client.Create(certs); err != nil {
+	if err = f.Test.Client.Create(certs); err != nil {
 		return err
 	}
 
 	log.V(2).Info("Creating service")
-	service := runtime.NewService(f.test.NS.Name, f.Name)
+	service := runtime.NewService(f.Test.NS.Name, f.Name)
 	runtime.NewServiceBuilder(service).
 		AddServicePort(24231, 24231).
 		WithSelector(f.labels)
-	if err = f.test.Client.Create(service); err != nil {
+	if err = f.Test.Client.Create(service); err != nil {
 		return err
 	}
 
 	log.V(2).Info("Creating pod")
 	containers := []corev1.Container{}
-	f.pod = runtime.NewPod(f.test.NS.Name, f.Name, containers...)
+	f.pod = runtime.NewPod(f.Test.NS.Name, f.Name, containers...)
 	runtime.NewPodBuilder(f.pod).
 		WithLabels(f.labels).
 		AddConfigMapVolume("config", f.Name).
@@ -126,12 +129,12 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
 		AddVolumeMount("certs", "/etc/fluent/metrics", "", true).
 		End()
-	if err = f.test.Client.Create(f.pod); err != nil {
+	if err = f.Test.Client.Create(f.pod); err != nil {
 		return err
 	}
 
 	log.V(2).Info("waiting for pod to be ready")
-	if err = oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.test.NS.Name, f.Name)).Output(); err != nil {
+	if err = oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.Test.NS.Name, f.Name)).Output(); err != nil {
 		return err
 	}
 	return nil

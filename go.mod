@@ -15,18 +15,18 @@ require (
 	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/gophercloud/gophercloud v0.8.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/mailru/easyjson v0.7.1 // indirect
-	github.com/onsi/ginkgo v1.12.0
-	github.com/onsi/gomega v1.9.0
+	github.com/onsi/ginkgo v1.14.2
+	github.com/onsi/gomega v1.10.3
 	github.com/openshift/api v0.0.0-20200602204738-768b7001fe69
 	github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd
 	github.com/operator-framework/operator-sdk v0.18.1
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rogpeppe/go-internal v1.5.2 // indirect
-	github.com/sirupsen/logrus v1.6.0
-	golang.org/x/crypto v0.0.0-20200602180216-279210d13fed // indirect
+	github.com/spf13/pflag v1.0.5
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v12.0.0+incompatible

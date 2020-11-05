@@ -41,7 +41,7 @@ func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
 		output = &logging.OutputSpec{
 			Name: forwardOutputName,
 			Type: logging.OutputTypeFluentdForward,
-			URL:  "tcp://localhost:24224",
+			URL:  "tcp://receiver:24224",
 		}
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}

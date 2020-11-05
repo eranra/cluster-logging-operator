@@ -1,3 +1,4 @@
+vendor/*
 **/.kube/*
 Dockerfile.local
 _output/
