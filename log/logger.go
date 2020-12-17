@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"runtime"
+	"path/filepath"
 
 	"github.com/ViaQ/logerr/internal/kv"
 	"github.com/ViaQ/logerr/kverrors"
@@ -77,6 +79,10 @@ func combine(context map[string]interface{}, keysAndValues ...interface{}) map[s
 			nc[key] = keysAndValues[i+1]
 		}
 	}
+
+	_, file, line, _ := runtime.Caller(3)
+	nc["file"] = filepath.Base(filepath.Dir(file)) + "/" + filepath.Base(file)
+	nc["line"] = line
 	return nc
 }
 
